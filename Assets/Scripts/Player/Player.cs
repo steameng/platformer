@@ -29,23 +29,25 @@ public class Player : MonoBehaviour
         jumpVelocity = Mathf.Abs(gravity) * timeToJumpApex; // Calculate jump velocity
         jumps = jumpsMax; // Set max jumps
         print("Gravity: " + gravity + "  Jump Velocity: " + jumpVelocity);
+
     }
 
     void Update()
     {
-
+        // Hitting the ceiling
         if (controller.collisions.above)
         {
             velocity.y = 0;
         }
 
+        // Hitting the floor
         if (controller.collisions.below)
         {
             velocity.y = 0; // Don't accumulate gravity
             jumps = jumpsMax;
         }
 
-        // Controller input
+        // Get Controller input
         Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
                
         // Jumping
@@ -72,12 +74,6 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Jump(float jumpVelocity)
-    {
-        velocity.y = jumpVelocity;
-        jumps -= 1;
-    }
-
     void Flip()
     {
         // Switch the way the player is labelled as facing.
@@ -88,4 +84,11 @@ public class Player : MonoBehaviour
         theScale.x *= -1;
         transform.localScale = theScale;
     }
+
+    void Jump(float jumpVelocity)
+    {
+        velocity.y = jumpVelocity;
+        jumps -= 1;
+    }
+
 }
