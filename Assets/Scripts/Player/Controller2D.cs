@@ -8,6 +8,7 @@ public class Controller2D : RaycastController
     float maxDescendAngle = 75;
 
     public CollisionInfo collisions;
+    public PhysicsOld physicsOld;
 
     public override void Start()
     {
@@ -18,12 +19,7 @@ public class Controller2D : RaycastController
     {
         UpdateRaycastOrigins();
         collisions.Reset();
-        collisions.velocityOld = velocity;
-
-        if (velocity.y < 0)
-        {
-            DescendSlope(ref velocity); // Handles flat ground as well
-        }
+        physicsOld.velocityOld = velocity;
 
         if (velocity.x != 0)
         {
@@ -53,25 +49,28 @@ public class Controller2D : RaycastController
 
             if (hit)
             {
-
                 float slopeAngle = Vector2.Angle(hit.normal, Vector2.up);
-                if (i == 0 && slopeAngle <= maxClimbAngle) // if bottom most ray and climbable slope
+                // Climbing
+                if (i == 0 && slopeAngle <= maxClimbAngle) 
                 {
-                    if (collisions.descendingSlope)
+                    if (collisions.descendingSlope) // in between slopes
                     {
                         collisions.descendingSlope = false;
-                        velocity = collisions.velocityOld;
+                        velocity = physicsOld.velocityOld;
                     }
+
                     float distanceToSlopeStart = 0;
                     if(slopeAngle != collisions.slopeAngleOld)
                     {
                         distanceToSlopeStart = hit.distance - skinWidth;
                         velocity.x -= distanceToSlopeStart * directionX;
                     }
+
                     ClimbSlope(ref velocity, slopeAngle);
                     velocity.x += distanceToSlopeStart * directionX;
                 }
 
+                // can't climb or upper rays getting hit by can't climb
                 if(!collisions.climbingSlope || slopeAngle > maxClimbAngle)
                 {
                     velocity.x = (hit.distance - skinWidth) * directionX;
@@ -91,6 +90,12 @@ public class Controller2D : RaycastController
 
     void VerticalCollisions(ref Vector3 velocity)
     {
+        
+        if (velocity.y < 0)
+        {
+            DescendSlope(ref velocity); // Handles flat ground as well
+        }
+
         float directionY = Mathf.Sign(velocity.y);
         float rayLength = Mathf.Abs(velocity.y) + skinWidth;
 
@@ -190,7 +195,7 @@ public class Controller2D : RaycastController
         public bool climbingSlope;
         public bool descendingSlope;
         public float slopeAngle, slopeAngleOld;
-        public Vector3 velocityOld;
+        
 
         public void Reset()
         {
@@ -202,6 +207,11 @@ public class Controller2D : RaycastController
             slopeAngleOld = slopeAngle;
             slopeAngle = 0;
         }
+    }
+
+    public struct PhysicsOld
+    {
+        public Vector3 velocityOld;
     }
 
 }
