@@ -16,24 +16,32 @@ public class Player : MonoBehaviour
 
     float gravity;
     float jumpVelocity;
+    public float dashVelocity = 10;
     Vector3 velocity;
     float velocityXSmoothing;
 
     Controller2D controller;
+    PlayerState playerState;
+    public Animator Animator;
 
     void Start()
     {
         controller = GetComponent<Controller2D>();
-
+        
         gravity = -(2 * jumpHeight) / Mathf.Pow(timeToJumpApex, 2); // Calculate gravity
         jumpVelocity = Mathf.Abs(gravity) * timeToJumpApex; // Calculate jump velocity
         jumps = jumpsMax; // Set max jumps
+        playerState.Reset();
         print("Gravity: " + gravity + "  Jump Velocity: " + jumpVelocity);
 
     }
 
     void Update()
     {
+        // if (Animator.GetCurrentAnimatorStateInfo(0).IsName("IdleAlucard"))
+        // {
+        //     Animator.SetBool("Backdash", false);
+        // }
         // Hitting the ceiling
         if (controller.collisions.above)
         {
@@ -45,17 +53,38 @@ public class Player : MonoBehaviour
         {
             velocity.y = 0; // Don't accumulate gravity
             jumps = jumpsMax;
+            Animator.SetBool("Grounded", true);
+            Animator.SetBool("IsFalling", false);
+        }
+        if (!controller.collisions.below)
+        {
+            Animator.SetBool("Grounded", false); 
         }
 
-        // Get Controller input
+        // Direction and Speed
         Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-               
+   
+ 
         // Jumping
         if (Input.GetKeyDown(KeyCode.Space) && jumps > 0)
         {
             velocity.y = jumpVelocity;
             jumps -= 1;
+            // Animator.SetBool("Grounded", false);
+            Animator.SetTrigger("Jump");
         }
+
+
+        // Dashing
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            float backdashDirection = (facingRight) ? -1 : 1;
+            velocity.x = dashVelocity * backdashDirection;
+            Animator.SetTrigger("Backdash");
+        }
+
+        
+
 
         // Moving
         float targetVelocityX = input.x * moveSpeed;
@@ -63,16 +92,37 @@ public class Player : MonoBehaviour
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
 
+        if (Mathf.Sign(velocity.y) == -1 && !Animator.GetBool("Grounded"))
+        {
+            Animator.SetBool("IsFalling", true);
+        }
+
+        if (!Animator.GetBool("Backdash"))
+        {
+            Animator.SetFloat("Speed", Mathf.Abs(velocity.x));
+        }
+        
+
+        print(
+        "XInput: " + input.x +
+        "YInput: " + input.y +
+        "XVelocity: " + velocity.x +
+        "YVelocity: " + velocity.y
+        );
+
+
         // Sprite Facing Direction
-        if (facingRight && velocity.x < 0)
+        if (facingRight && input.x < 0 && !Animator.GetBool("Backdash"))
         {
             Flip();
         }
-        if (!facingRight && velocity.x > 0)
+        if (!facingRight && input.x > 0 && !Animator.GetBool("Backdash"))
         {
             Flip();
         }
+
     }
+
 
     void Flip()
     {
@@ -90,5 +140,17 @@ public class Player : MonoBehaviour
         velocity.y = jumpVelocity;
         jumps -= 1;
     }
+
+     public struct PlayerState
+     {
+        public bool backdashing;
+        
+        public void Reset()
+        {
+            backdashing =  false;
+        }
+     
+    }
+
 
 }
